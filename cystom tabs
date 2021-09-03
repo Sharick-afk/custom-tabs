@@ -1,0 +1,230 @@
+
+    document.addEventListener("DOMContentLoaded", function () {
+        if (window.location.pathname === "/") {
+            const page =
+                document.querySelector(".flat-skin-block").parentElement;
+            page.classList.add("_customer-page");
+            const pageSection = page.querySelectorAll(".flat-skin-block");
+            for (let i = 0; i < pageSection.length; i++) {
+                pageSection[i].classList.add(
+                    "_customer-page__section",
+                    "_customer-page__section_" + i
+                );
+                pageSection[i].innerHTML =
+                    `<div class="_customer-page__container">` +
+                    pageSection[i].innerHTML +
+                    `</div>`;
+            }
+            var slidermain = new Swiper(
+                "._customer-main-slider.swiper-container",
+                {
+                    slidesPerView: 1,
+                    loop: true,
+                    keyboard: {
+                        enabled: true,
+                    },
+                    simulateTouch: false,
+                }
+            );
+            Array.prototype.forEach.call(
+                document.getElementsByClassName("_customer-order"),
+                function (element) {
+                    const _customerSubmitButton =
+                            element.querySelector("#_customerSubmit"),
+                        _customerFileButton =
+                            element.querySelector("#_customerFile");
+                    _customerSubmitButton.disabled = true;
+                    _customerFileButton.disabled = true;
+                    let _customerFinalMessage = "";
+
+                    function _customerSendForm() {
+                        if (_customerSubmitButton.disabled !== true) {
+                            _customerFinalMessage = `Добрый день!\nМеня зовут ${
+                                element.querySelector("#_customerName").value
+                            }\n${
+                                element.querySelector("#_customerMessage").value
+                            }`;
+                        }
+                    }
+
+                    function formValidate() {
+                        if (event.target.value !== "") {
+                            event.target.style.borderColor = "#ccc";
+                        } else {
+                            event.target.style.borderColor = "#f30";
+                        }
+                        _customerSubmitButton.disabled =
+                            [
+                                ...element.querySelectorAll(
+                                    "._customer-widget-form__item:required"
+                                ),
+                            ].filter(
+                                (element) =>
+                                    element.value === "" || element.value === 0
+                            ).length !== 0
+                                ? true
+                                : false;
+                        _customerFileButton.disabled =
+                            _customerSubmitButton.disabled == true
+                                ? true
+                                : false;
+                    }
+                    element
+                        .querySelectorAll(
+                            "._customer-widget-form__item:required"
+                        )
+                        .forEach((element) => {
+                            element.addEventListener("change", () => {
+                                formValidate();
+                            });
+                            element.addEventListener("mouseout", () => {
+                                formValidate();
+                            });
+                        });
+
+                    function openWidget() {
+                        _customerSendForm();
+                        setTimeout(() => {
+                            document.querySelector(
+                                "#order_messages_attributes_0_text"
+                            ).value = _customerFinalMessage;
+                            document.querySelector(
+                                ".js-order-customer-phone-field"
+                            ) === null
+                                ? (document.querySelector(
+                                      "#order_messages_attributes_0_text"
+                                  ).value +=
+                                      "\n" +
+                                      "Телефон: " +
+                                      element.querySelector("#_customerPhone")
+                                          .value)
+                                : (document.querySelector(
+                                      ".js-order-customer-phone-field"
+                                  ).value =
+                                      element.querySelector(
+                                          "#_customerPhone"
+                                      ).value);
+                        }, 1000);
+                    }
+                    _customerSubmitButton.addEventListener(
+                        "click",
+                        function (event) {
+                            openWidget();
+                        }
+                    );
+                    _customerFileButton.addEventListener("click", function (e) {
+                        openWidget();
+                        setTimeout(() => {
+                            document.getElementById("order_").click();
+                        }, 1000);
+                    });
+                }
+            );
+
+            function catalogOpen(item) {
+                setTimeout(() => {
+                    let toggle = item
+                        .closest(".prl-item")
+                        .querySelectorAll(".product-rubrics-list .prl-toggle");
+                    if (toggle.length > 1) {
+                        for (let i = 1; i < toggle.length; i++) {
+                            toggle[i].style.display = "none";
+                            toggle[i].click();
+                            catalogOpen(toggle[i]);
+                        }
+                    }
+                }, 500);
+            }
+            let catalogBody = document.querySelector("._customer-catalog");
+            catalogBody.addEventListener("click", function () {
+                setTimeout(() => {
+                    if (
+                        document.querySelector(
+                            "._customer-catalog .prl-item.level-1.opened> .product-rubrics-list"
+                        )
+                    ) {
+                        let activeCatalog1 = document.querySelector(
+                            "._customer-catalog .prl-item.level-1.opened> .product-rubrics-list"
+                        );
+                        activeCatalog1.cloneNode(true);
+                        let catalogBody1 = document.querySelector(
+                            "._customer-catalog__body"
+                        );
+                        catalogBody1.innerHTML = "";
+                        catalogBody1.appendChild(activeCatalog1);
+                    }
+                    if (
+                        !document.querySelector(
+                            "._customer-catalog> ul>li.opened"
+                        )
+                    ) {
+                        document.querySelector(
+                            "._customer-catalog__body"
+                        ).innerHTML = "";
+                    }
+                }, 500);
+            });
+
+            fetch("/catalog")
+                .then((response) => response.text())
+                .then((html) => {
+                    const parser = new DOMParser();
+                    const parsedDocument = parser.parseFromString(
+                        html,
+                        "text/html"
+                    );
+                    const parsedCatalog = parsedDocument
+                        .querySelector(
+                            ".main-column-menu .product-rubrics-list"
+                        )
+                        .cloneNode(true);
+                    const catalog =
+                        document.querySelector("._customer-catalog");
+
+                    if (catalog !== null && parsedCatalog !== null) {
+                        catalog.appendChild(parsedCatalog);
+
+                        const catalogToggle =
+                            catalog.querySelectorAll(".prl-toggle");
+                        for (toggle of catalogToggle) {
+                            toggle.addEventListener("click", function (e) {
+                                for (t of catalogToggle) {
+                                    if (t !== e.target) {
+                                        let item =
+                                            t.closest(".prl-item.level-1");
+
+                                        if (item.classList.contains("opened")) {
+                                            item.classList.toggle("opened");
+                                        }
+                                    }
+                                }
+                                catalogOpen(e.target);
+                            });
+                        }
+                    }
+                })
+                .catch((err) => console.log("Failed to fetch page: ", err));
+
+            setTimeout(() => {
+                var firstTab = document.querySelector(
+                    "._customer-catalog  .prl-item.level-1[data-id='10561434']>.prl-cover > .prl-toggle "
+                );
+                firstTab.click();
+                if (
+                    !document.querySelector(
+                        "._customer-catalog .prl-item.level-1[data-url_name='k-10099406-truba_kruglaya'] > .prl-cover > .prl-toggle"
+                    )
+                ) {
+                    document
+                        .querySelector(
+                            "._customer-catalog .prl-item.level-1[data-url_name='k-10099406-truba_kruglaya'] .prl-link-content"
+                        )
+                        .classList.add("_customer-disabled");
+                }
+            }, 1500);
+
+            page.querySelectorAll(".header").forEach(function (item) {
+                item.classList.add("_customer-section_title");
+            });
+        }
+    });
